@@ -1,3 +1,6 @@
 [spotify_credentials]
 client_id=YOUR_ID_HERE
 client_secret=YOUR_SECRET_HERE
+
+[server_credentials]
+url=YOUR_SQLALCHEMY_URL_HERE
