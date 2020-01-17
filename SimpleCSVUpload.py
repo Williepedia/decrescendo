@@ -1,8 +1,11 @@
 import pandas as pd
 import os
 from sqlalchemy import create_engine
+import configparser
 
-pd.set_option("display.max_columns", 500)
+config = configparser.ConfigParser()
+config.read('config.ini')
+
 path = r""
 
 df = pd.read_csv(path, encoding="cp")
@@ -21,7 +24,7 @@ df.columns = df.columns = (
 df.dropna(how="all", axis="columns")
 # uploads to database
 engine = create_engine(
-    "",
+    config['server_credentials']['url'],
     encoding="utf-8",
     )
 db = engine.connect()
