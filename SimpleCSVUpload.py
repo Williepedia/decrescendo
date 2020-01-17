@@ -6,9 +6,9 @@ import configparser
 config = configparser.ConfigParser()
 config.read('config.ini')
 
-path = r""
+path = r"Z:\1.csv"
 
-df = pd.read_csv(path, encoding="cp")
+df = pd.read_csv(path)
 
 # df['file'] = path
 
@@ -28,6 +28,6 @@ engine = create_engine(
     encoding="utf-8",
     )
 db = engine.connect()
-table = ""
-df.to_sql(table, db, if_exists="append", index=False)
+table = "harmony_ascap_i"
+df.to_sql(table, db, if_exists="replace", index=False)
 db.close()
