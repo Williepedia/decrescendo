@@ -1,4 +1,3 @@
-###!/usr/bin/env python
 # coding: utf-8
 from collections import defaultdict
 import csv
@@ -8,9 +7,10 @@ import logging
 import os
 import sys
 import cchardet as chardet
+from charset_normalizer import CharsetNormalizerMatches as CnM
 import pandas as pd
 import xlrd
-
+from io import StringIO
 
 def detect_encoding(file):
     with open(file, 'rb') as f:
@@ -27,23 +27,10 @@ def detect_encoding(file):
     return result['encoding']
 
 
-def csv_from_excel(workbook):
-    wb = xlrd.open_workbook(workbook)
-    sheets = wb.sheets()
-    print(sheets)
-    for sheet in sheets:
-        sh = wb.sheet_by_name(sheet.name)
-        your_csv_file = open(workbook + ' - ' +
-                             sheet.name + '.csv', 'w', newline='')
-        wr = csv.writer(your_csv_file, quoting=csv.QUOTE_ALL)
-        for rownum in range(sh.nrows):
-            wr.writerow(sh.row_values(rownum))
-        your_csv_file.close()
-
-
 def get_data(folder_path: str) -> dict:
     """
-    Iterates through a directory to create a Dict of Pandas DataFrames with filepaths as their keys.
+    Iterates through a directory to create a Dict of Pandas DataFrames with
+    filepaths as their keys.
 
     :type folder_path: str
     :rtype: dict
@@ -52,7 +39,7 @@ def get_data(folder_path: str) -> dict:
     values: pd.DataFrame
     """
 
-    print("This is the name of the script: ", sys.argv[0])
+    # print("This is the name of the script: ", sys.argv[0])
     print("Initializing Data Retrieval...")
 
     csvfiles = glob.glob(folder_path + "/**/*.csv", recursive=True)
@@ -84,11 +71,19 @@ def get_data(folder_path: str) -> dict:
         print("Reading File %d of %d:" % (i, len(csvfiles) + len(xlfiles)))
         print("\tFull Path: ", file)
         try:
-
-            df = pd.read_csv(file, encoding=detect_encoding(
-                file), low_memory=False, header='infer')
+            df = pd.read_csv(file, low_memory=False, header='infer', encoding = detect_encoding(file))
             df.index.rename('file_index',inplace=True)
             file_dict.update({file: df})
+        except UnicodeDecodeError:
+            try:
+                print("Encoding Detection Failed... Attempting to Normalize...")
+                normalized = StringIO(str(CnM.from_path(file).best().first()))
+                df = pd.read_csv(normalized, low_memory=False, header='infer')
+                df.index.rename('file_index',inplace=True)
+                file_dict.update({file: df})
+                print("Success!")
+            except:
+                print('Encoding Normalization Failed')
         except:
             logging.error('COULD NOT LOAD %s' % file)
             print('\t\tFAILED')
@@ -125,8 +120,8 @@ def clean_data(dirty_data: pd.DataFrame) -> pd.DataFrame:
     return cleaned_data
 
 
-# merge function to  merge all sublist having common elements.
 def merge_common(lists):
+    # merge function to  merge all sublist having common elements.
     neigh = defaultdict(set)
     visited = set()
     for each in lists:
@@ -193,26 +188,19 @@ def group_similar_tables(tabledict: dict):
 
     return grouped
 
-def export_tables(list, path):
 
+def export_tables(list, path):
     i = 1
     for table in list:
         print('Exporting table %d of %d' % (i, len(list)))
         table.to_csv(path + r'\\' + str(i) +'.csv')
         i=i+1
 
+
 if __name__ == '__main__':
-    logging.basicConfig(filename=r'C:\Users\wpatteson\Documents\log.txt',
-                        level='ERROR',
-                        format='%(asctime)s %(levelname)-8s %(message)s')
-
-
-    # path: str = r'C:\Users\wpatteson\Downloads\Original Files from Seller'
-    path: str = sys.argv[1]
-
+    path = sys.argv[1]
     tables = get_data(path)
     grouped_tables = group_similar_tables(tables)
-    # print(grouped_tables)
     print("%d Table(s) Analyzed, %d Unique Schema(s) Detected" %
           (len(tables), len(grouped_tables)))
     export_tables(grouped_tables, path)
