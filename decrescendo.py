@@ -195,8 +195,6 @@ def ingest(path):
 
 if __name__ == '__main__':
     path = sys.argv[1]
-    i = 1
-    for table in ingest(path):
+    for i, table in enumerate(ingest(path)):
         print('Exporting table %d of %d' % (i, len(list)))
         table.to_csv(path + r'\\Decrescendo Export No ' + str(i) +'.csv')
-        i = i+1
