@@ -147,7 +147,7 @@ def ingest(path):
         print("Grouping Similar Files...")
         # Determine if any of the tables in the TableDict are the same format.
         like_tables = []
-        match_threshold = .75
+        match_threshold = 0.75
         table_info = {}
         for k, v in tabledict.items():
             table_info[k] = list(v.columns.str.strip()
@@ -195,6 +195,7 @@ def ingest(path):
 
 if __name__ == '__main__':
     path = sys.argv[1]
-    for i, table in enumerate(ingest(path)):
-        print('Exporting table %d of %d' % (i, len(list)))
+    tables = ingest(path)
+    for i, table in enumerate(tables):
+        print('Exporting table %d of %d' % (i+1, len(tables)))
         table.to_csv(path + r'\\Decrescendo Export No ' + str(i) +'.csv')
