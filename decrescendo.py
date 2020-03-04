@@ -198,4 +198,4 @@ if __name__ == '__main__':
     tables = ingest(path)
     for i, table in enumerate(tables):
         print('Exporting table %d of %d' % (i+1, len(tables)))
-        table.to_csv(path + r'\\Decrescendo Export No ' + str(i) +'.csv')
+        table.to_csv(path + r'\\Decrescendo Export No ' + str(i+1) +'.csv')
