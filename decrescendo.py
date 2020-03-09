@@ -11,6 +11,14 @@ from charset_normalizer import CharsetNormalizerMatches as CnM
 import pandas as pd
 import xlrd
 from io import StringIO
+import configparser
+import pickle
+
+class Schema(object):
+    def __init__(self, name, columns):
+        self.name = name
+        self.columns = columns
+        self.tempoMap = None #reserved for Aggregate Database Mapping
 
 def ingest(path):
     def detect_encoding(file):
@@ -192,6 +200,59 @@ def ingest(path):
     tables = get_data(path)
     grouped_tables = group_similar_tables(tables)
     return grouped_tables
+
+def loadSchemas():
+    schemas = []
+    schema_path = 'schemas.dat'
+    with open(schema_path, 'rb') as config_dictionary_file:
+        while 1:
+            try:
+                schema = pickle.load(config_dictionary_file)
+                schemas.append(schema)
+            except EOFError:
+                break
+    return schemas
+
+def addSchema(name, columns):
+    schemas = loadSchemas()
+    schema_path = 'schemas.dat'
+    schemas.append(Schema(name,columns))
+    with open(schema_path, 'wb') as config_dictionary_file:
+        for schema in schemas:
+            pickle.dump(schema, config_dictionary_file)
+
+
+def detectSchema(data):
+    unknown_counter = 0
+    schemas = loadSchemas()
+    results=dict()
+    if isinstance(data,list):
+        for item in data:
+            schema = detectSchema(item)    
+            if schema == "UNKNOWN":
+                unknown_counter = unknown_counter+1
+                results[F"UNKNOWN_{unknown_counter}"]=item
+            else:
+                results[schema] = item
+        return results
+    else:
+        HighScore = 0
+        for schema in schemas:
+            score = 0
+            base = len(schema.columns)
+            for column in schema.columns:
+                if column in data.columns:
+                    score += 1
+            if (score/base) > HighScore:
+                HighScore = score/base
+                BestMatch = schema.name
+        if HighScore < .75: # Column Match Threshold
+            print("No Good Matches:" + " @ " + str(HighScore))
+            return(f"UNKNOWN")
+        else:
+            print("Best Match : " + BestMatch + " @ " + str(HighScore))
+            return(BestMatch)
+
 
 if __name__ == '__main__':
     path = sys.argv[1]
